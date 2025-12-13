@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 // Components (to be created)
 import Dashboard from './components/Dashboard';
@@ -12,7 +12,7 @@ const TempSales = () => <div className="p-4"><h1>Vendas (Coming Soon)</h1></div>
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
@@ -20,7 +20,7 @@ function App() {
           <Route path="sales" element={<Sales />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
