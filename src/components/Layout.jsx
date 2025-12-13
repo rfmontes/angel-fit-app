@@ -5,7 +5,7 @@ import { useStore } from '../lib/store';
 
 export default function Layout() {
     const location = useLocation();
-    const { fetchData } = useStore();
+    const { fetchData, user, signOut } = useStore();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Dark Mode State
@@ -37,9 +37,12 @@ export default function Layout() {
             <div className="md:hidden fixed top-0 w-full z-20 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center transition-colors duration-300">
                 <div className="flex items-center justify-center w-full relative">
                     <h1 className="text-4xl font-normal text-pink-600 dark:text-pink-400 font-['Great_Vibes'] tracking-wider drop-shadow-sm">Angel Fit</h1>
-                    <div className="absolute right-0 flex items-center gap-4">
-                        <button onClick={() => setDarkMode(!darkMode)} className="text-gray-500 dark:text-gray-400">
-                            {darkMode ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+                    <div className="absolute right-0 flex items-center gap-3">
+                        <button onClick={() => setDarkMode(!darkMode)} className="text-gray-500 dark:text-gray-400 p-1">
+                            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                        </button>
+                        <button onClick={() => signOut()} className="text-gray-500 dark:text-gray-400 p-1">
+                            <LogOut className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
@@ -74,14 +77,27 @@ export default function Layout() {
                     </ul>
                 </div>
 
-                <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                    <button onClick={() => setDarkMode(!darkMode)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-                        {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                    </button>
-                    <button className="flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                        <LogOut className="w-5 h-5 mr-2" />
-                        <span className="text-sm font-medium">Sair</span>
-                    </button>
+                <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-4">
+                    {/* User Info */}
+                    <div className="flex flex-col">
+                        <span className="text-xs text-gray-400">Logado como:</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate" title={user?.email}>
+                            {user?.email}
+                        </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                        <button onClick={() => setDarkMode(!darkMode)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+                            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                        </button>
+                        <button
+                            onClick={() => signOut()}
+                            className="flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        >
+                            <LogOut className="w-5 h-5 mr-2" />
+                            <span className="text-sm font-medium">Sair</span>
+                        </button>
+                    </div>
                 </div>
             </nav>
 

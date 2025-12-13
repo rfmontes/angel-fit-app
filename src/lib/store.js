@@ -5,6 +5,25 @@ export const useStore = create((set, get) => ({
     products: [],
     sales: [],
     loading: false,
+    user: null,
+    session: null,
+    authInitialized: false,
+
+    // Auth Actions
+    checkSession: async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        set({ session, user: session?.user || null, authInitialized: true });
+
+        // Listen for changes
+        supabase.auth.onAuthStateChange((_event, session) => {
+            set({ session, user: session?.user || null, authInitialized: true });
+        });
+    },
+
+    signOut: async () => {
+        await supabase.auth.signOut();
+        set({ session: null, user: null });
+    },
 
     // Initial Fetch
     fetchData: async () => {
