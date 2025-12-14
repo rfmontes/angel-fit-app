@@ -89,6 +89,11 @@ export default function Inventory() {
     const sortedProducts = useMemo(() => {
         const sorted = [...products];
         sorted.sort((a, b) => {
+            // Always push zero stock items to the end
+            if (a.stock === 0 && b.stock !== 0) return 1;
+            if (a.stock !== 0 && b.stock === 0) return -1;
+
+            // Normal sorting for non-zero items
             let aValue = a[sortConfig.key];
             let bValue = b[sortConfig.key];
 
@@ -237,7 +242,7 @@ export default function Inventory() {
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {sortedProducts.map((product) => (
-                                <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <tr key={product.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${product.stock === 0 ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900 dark:text-white">{product.name}</div>
                                         <div className="text-sm text-gray-500 dark:text-gray-400">{product.supplier} | {product.category}</div>
@@ -246,9 +251,13 @@ export default function Inventory() {
                                         {product.color ? `${product.color} / ` : ''}{product.size}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.stock <= (product.min_stock || 0) ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.stock === 0
+                                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ring-2 ring-red-400 dark:ring-red-600'
+                                                : product.stock <= (product.min_stock || 0)
+                                                    ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                                             }`}>
-                                            {product.stock} un
+                                            {product.stock === 0 ? 'SEM ESTOQUE' : `${product.stock} un`}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

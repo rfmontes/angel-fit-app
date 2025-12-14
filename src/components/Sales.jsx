@@ -9,8 +9,10 @@ export default function Sales() {
 
     const filteredProducts = useMemo(() => {
         return products.filter(p =>
-            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.category.toLowerCase().includes(searchTerm.toLowerCase())
+            p.stock > 0 && (
+                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.category.toLowerCase().includes(searchTerm.toLowerCase())
+            )
         );
     }, [products, searchTerm]);
 
@@ -130,7 +132,7 @@ export default function Sales() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="font-medium text-gray-900 dark:text-white">{product.name}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{product.size} | {product.category}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{product.size} | {product.color} | {product.category}</p>
                                 </div>
                                 <span className="font-bold text-pink-600 dark:text-pink-400">
                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}

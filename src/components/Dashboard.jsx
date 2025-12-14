@@ -7,7 +7,7 @@ export default function Dashboard() {
 
     const stats = useMemo(() => {
         const totalProducts = products.length;
-        const lowStock = products.filter(p => p.stock <= p.minStock).length;
+        const outOfStock = products.filter(p => p.stock === 0).length;
 
         // Calculate sales today
         const today = new Date().toISOString().split('T')[0];
@@ -21,6 +21,20 @@ export default function Dashboard() {
 
         // Inventory Value (Cost)
         const totalCost = products.reduce((acc, curr) => acc + (curr.cost * curr.stock), 0);
+
+        // Total Cost of All Pieces (investment = current stock + sold items at cost price)
+        const totalPiecesCost = products.reduce((acc, curr) => acc + curr.cost, 0) +
+            sales.reduce((acc, sale) => {
+                if (!sale.items) return acc;
+                return acc + sale.items.reduce((sum, item) => {
+                    const product = products.find(p => p.id === item.product_id);
+                    // Use the product's cost price, not the sale price
+                    return sum + (product ? product.cost * item.quantity : 0);
+                }, 0);
+            }, 0);
+
+        // Potential Revenue (current stock valued at sale prices)
+        const potentialRevenue = products.reduce((acc, curr) => acc + (curr.price * curr.stock), 0);
 
         // Group by Category and Color
         // Structure: { 'CategoryName': { stock: 0, cost: 0, sales: 0 } }
@@ -67,7 +81,7 @@ export default function Dashboard() {
             }
         });
 
-        return { totalProducts, lowStock, salesToday, totalRevenue, itemsSold, totalCost, byCategory, byColor };
+        return { totalProducts, outOfStock, salesToday, totalRevenue, itemsSold, totalCost, totalPiecesCost, potentialRevenue, byCategory, byColor };
     }, [products, sales]);
 
     const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -76,7 +90,7 @@ export default function Dashboard() {
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Visão Geral</h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                 {/* Sales Today Card */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center">
                     <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400 mr-4">
@@ -114,6 +128,37 @@ export default function Dashboard() {
                         <p className="text-2xl font-bold text-gray-800 dark:text-white">
                             {formatCurrency(stats.totalCost)}
                         </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{products.reduce((acc, p) => acc + p.stock, 0)} peças</p>
+                    </div>
+                </div>
+
+                {/* Total Pieces Cost Card */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center">
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-600 dark:text-blue-400 mr-4">
+                        <Package className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Investimento Total</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                            {formatCurrency(stats.totalPiecesCost)}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {products.reduce((acc, p) => acc + p.stock, 0) + stats.itemsSold} peças compradas
+                        </p>
+                    </div>
+                </div>
+
+                {/* Potential Revenue Card */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center">
+                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-full text-emerald-600 dark:text-emerald-400 mr-4">
+                        <DollarSign className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Potencial do Estoque</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                            {formatCurrency(stats.potentialRevenue)}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">se vender tudo</p>
                     </div>
                 </div>
 
@@ -123,13 +168,13 @@ export default function Dashboard() {
                         <AlertTriangle className="w-8 h-8" />
                     </div>
                     <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Estoque Baixo</p>
-                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.lowStock} itens</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Sem Estoque</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.outOfStock} itens</p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <StatsTable
                     title="Desempenho por Categoria"
                     data={stats.byCategory}
@@ -154,11 +199,20 @@ export default function Dashboard() {
                         <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                             {sales.slice(-5).reverse().map((sale) => (
                                 <li key={sale.id} className="py-3 flex justify-between items-center text-left">
-                                    <span className="font-medium text-gray-800 dark:text-white">
-                                        {new Date(sale.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                    <span>{sale.items.length} itens</span>
-                                    <span className="font-bold text-green-600 dark:text-green-400">
+                                    <div className="flex-1">
+                                        <span className="font-medium text-gray-800 dark:text-white block">
+                                            {sale.customer_name || 'Cliente'}
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {new Date(sale.sale_date).toLocaleDateString('pt-BR', {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: 'numeric'
+                                            })}
+                                        </span>
+                                    </div>
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">{sale.items.length} itens</span>
+                                    <span className="font-bold text-green-600 dark:text-green-400 ml-4">
                                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.total)}
                                     </span>
                                 </li>

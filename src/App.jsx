@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
 import Sales from './components/Sales';
+import SalesHistory from './components/SalesHistory';
 import Login from './components/Login';
 import AuthRoute from './components/AuthRoute';
 import { useStore } from './lib/store';
@@ -27,6 +28,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="sales" element={<Sales />} />
+            <Route path="sales-history" element={<SalesHistory />} />
           </Route>
         </Route>
       </Routes>

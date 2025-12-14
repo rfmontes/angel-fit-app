@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, LogOut, Menu, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, LogOut, Menu, Sun, Moon, History } from 'lucide-react';
 import { useStore } from '../lib/store';
 
 export default function Layout() {
@@ -29,6 +29,7 @@ export default function Layout() {
         { path: '/', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/inventory', label: 'Estoque', icon: Package },
         { path: '/sales', label: 'Vendas', icon: ShoppingCart },
+        { path: '/sales-history', label: 'Histórico', icon: History },
     ];
 
     return (
