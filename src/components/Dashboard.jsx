@@ -158,7 +158,7 @@ export default function Dashboard() {
                         <p className="text-2xl font-bold text-gray-800 dark:text-white">
                             {formatCurrency(stats.potentialRevenue)}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">se vender tudo</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{products.reduce((acc, p) => acc + p.stock, 0)} peças</p>
                     </div>
                 </div>
 

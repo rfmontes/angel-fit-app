@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../lib/store';
-import { Search, ShoppingCart, Plus, Minus, Trash } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash, Zap } from 'lucide-react';
 
 export default function Sales() {
     const { products, addSale } = useStore();
@@ -29,6 +29,11 @@ export default function Sales() {
             }
             return [...prev, { productId: product.id, name: product.name, price: product.price, quantity: 1 }];
         });
+    };
+
+    const buyNow = (product) => {
+        addToCart(product);
+        setActiveTab('cart');
     };
 
     const removeFromCart = (productId) => {
@@ -123,14 +128,13 @@ export default function Sales() {
                     {filteredProducts.map(product => (
                         <div
                             key={product.id}
-                            onClick={() => product.stock > 0 && addToCart(product)}
-                            className={`p-4 border rounded-lg cursor-pointer transition dark:border-gray-600 ${product.stock > 0
-                                ? 'hover:border-pink-500 hover:shadow-md bg-white dark:bg-gray-700 dark:hover:border-pink-400'
+                            className={`p-4 border rounded-lg transition dark:border-gray-600 relative ${product.stock > 0
+                                ? 'bg-white dark:bg-gray-700 hover:shadow-md'
                                 : 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800'
                                 }`}
                         >
                             <div className="flex justify-between items-start">
-                                <div>
+                                <div className="flex-1">
                                     <h3 className="font-medium text-gray-900 dark:text-white">{product.name}</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">{product.size} | {product.color} | {product.category}</p>
                                 </div>
@@ -138,8 +142,34 @@ export default function Sales() {
                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                                 </span>
                             </div>
-                            <div className="mt-2 text-xs font-medium text-gray-400 dark:text-gray-500">
-                                Estoque: {product.stock}
+                            <div className="mt-2 flex items-center justify-between">
+                                <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
+                                    Estoque: {product.stock}
+                                </span>
+                                {product.stock > 0 && (
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                addToCart(product);
+                                            }}
+                                            className="p-2 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-lg hover:bg-pink-200 dark:hover:bg-pink-900/50 transition"
+                                            title="Adicionar ao carrinho"
+                                        >
+                                            <ShoppingCart className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                buyNow(product);
+                                            }}
+                                            className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition"
+                                            title="Comprar agora"
+                                        >
+                                            <Zap className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
