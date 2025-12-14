@@ -105,4 +105,89 @@ export const useStore = create((set, get) => ({
             products: newProducts
         }));
     },
+
+    deleteSale: async (saleId) => {
+        // 1. Get sale items to restore stock
+        const { data: saleItems } = await supabase.from('sale_items').select('*').eq('sale_id', saleId);
+
+        // 2. Restore stock for each item
+        const newProducts = [...get().products];
+        for (const item of saleItems) {
+            const product = newProducts.find(p => p.id === item.product_id);
+            if (product) {
+                const newStock = product.stock + item.quantity;
+                product.stock = newStock;
+                await supabase.from('products').update({ stock: newStock }).eq('id', item.product_id);
+            }
+        }
+
+        // 3. Delete sale items
+        await supabase.from('sale_items').delete().eq('sale_id', saleId);
+
+        // 4. Delete sale
+        await supabase.from('sales').delete().eq('id', saleId);
+
+        // 5. Update state
+        set((state) => ({
+            sales: state.sales.filter(s => s.id !== saleId),
+            products: newProducts
+        }));
+    },
+
+    updateSale: async (saleId, updatedSale) => {
+        // 1. Get original sale items
+        const { data: originalItems } = await supabase.from('sale_items').select('*').eq('sale_id', saleId);
+
+        // 2. Calculate stock adjustments
+        const newProducts = [...get().products];
+
+        // Restore stock from original items
+        for (const item of originalItems) {
+            const product = newProducts.find(p => p.id === item.product_id);
+            if (product) {
+                product.stock += item.quantity;
+            }
+        }
+
+        // Deduct stock for new items
+        for (const item of updatedSale.items) {
+            const product = newProducts.find(p => p.id === item.productId);
+            if (product) {
+                if (product.stock < item.quantity) {
+                    throw new Error(`Estoque insuficiente para ${product.name}`);
+                }
+                product.stock -= item.quantity;
+            }
+        }
+
+        // 3. Update sale
+        const saleData = {
+            total: updatedSale.total,
+            payment_method: updatedSale.paymentMethod,
+            customer_name: updatedSale.customer_name,
+            customer_phone: updatedSale.customer_phone,
+            sale_date: updatedSale.sale_date
+        };
+        await supabase.from('sales').update(saleData).eq('id', saleId);
+
+        // 4. Delete old items and insert new ones
+        await supabase.from('sale_items').delete().eq('sale_id', saleId);
+
+        const itemsToInsert = updatedSale.items.map(item => ({
+            sale_id: saleId,
+            product_id: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            product_name: item.name
+        }));
+        await supabase.from('sale_items').insert(itemsToInsert);
+
+        // 5. Update stock in database
+        for (const product of newProducts) {
+            await supabase.from('products').update({ stock: product.stock }).eq('id', product.id);
+        }
+
+        // 6. Refresh data
+        await get().fetchData();
+    },
 }))

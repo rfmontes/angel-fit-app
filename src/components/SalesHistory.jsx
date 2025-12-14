@@ -1,11 +1,35 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../lib/store';
-import { Search, Calendar, User, ShoppingBag, DollarSign } from 'lucide-react';
+import { Search, Calendar, User, ShoppingBag, DollarSign, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 
 export default function SalesHistory() {
-    const { sales } = useStore();
+    const { sales, products, deleteSale } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortOrder, setSortOrder] = useState('desc'); // 'desc' = newest first, 'asc' = oldest first
+    const [expandedSales, setExpandedSales] = useState(new Set());
+
+    const toggleExpand = (saleId) => {
+        setExpandedSales(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(saleId)) {
+                newSet.delete(saleId);
+            } else {
+                newSet.add(saleId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleDelete = async (sale) => {
+        if (window.confirm(`Tem certeza que deseja excluir a venda de ${sale.customer_name || 'Cliente'}?\n\nO estoque será restaurado.`)) {
+            try {
+                await deleteSale(sale.id);
+                alert('Venda excluída com sucesso!');
+            } catch (error) {
+                alert('Erro ao excluir venda: ' + error.message);
+            }
+        }
+    };
 
     const filteredAndSortedSales = useMemo(() => {
         let filtered = sales.filter(sale =>
@@ -85,28 +109,88 @@ export default function SalesHistory() {
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                             Total
                                         </th>
+                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Detalhes
+                                        </th>
+                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Ações
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                    {filteredAndSortedSales.map((sale) => (
-                                        <tr key={sale.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                                {formatDate(sale.sale_date)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                {sale.customer_name || 'Cliente'}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                                {sale.customer_phone || '-'}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600 dark:text-gray-400">
-                                                {sale.items.length}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600 dark:text-green-400">
-                                                {formatCurrency(sale.total)}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {filteredAndSortedSales.map((sale) => {
+                                        const isExpanded = expandedSales.has(sale.id);
+                                        return (
+                                            <>
+                                                <tr key={sale.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                                        {formatDate(sale.sale_date)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                        {sale.customer_name || 'Cliente'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                                        {sale.customer_phone || '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600 dark:text-gray-400">
+                                                        {sale.items.length}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600 dark:text-green-400">
+                                                        {formatCurrency(sale.total)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <button
+                                                            onClick={() => toggleExpand(sale.id)}
+                                                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition"
+                                                        >
+                                                            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <button
+                                                            onClick={() => handleDelete(sale)}
+                                                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition"
+                                                            title="Excluir venda"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                {isExpanded && (
+                                                    <tr key={`${sale.id}-details`}>
+                                                        <td colSpan="7" className="px-6 py-4 bg-gray-50 dark:bg-gray-700/30">
+                                                            <div className="space-y-2">
+                                                                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Itens da Venda:</p>
+                                                                {sale.items.map((item, idx) => {
+                                                                    const product = products.find(p => p.id === item.product_id);
+                                                                    return (
+                                                                        <div key={idx} className="flex justify-between items-center text-sm py-2 border-b border-gray-200 dark:border-gray-600 last:border-0">
+                                                                            <div className="flex-1">
+                                                                                <span className="font-medium text-gray-900 dark:text-white">{item.name || product?.name || 'Produto'}</span>
+                                                                                {product && (
+                                                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                                                        {product.color && <span>{product.color}</span>}
+                                                                                        {product.color && product.size && <span> • </span>}
+                                                                                        {product.size && <span>{product.size}</span>}
+                                                                                        {(product.color || product.size) && product.category && <span> • </span>}
+                                                                                        {product.category && <span>{product.category}</span>}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="text-right ml-4">
+                                                                                <div className="text-gray-600 dark:text-gray-400">Qtd: {item.quantity}</div>
+                                                                                <div className="font-semibold text-gray-900 dark:text-white">{formatCurrency(item.price)}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -138,9 +222,39 @@ export default function SalesHistory() {
                                             <Calendar className="w-4 h-4" />
                                             {formatDate(sale.sale_date)}
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <ShoppingBag className="w-4 h-4" />
-                                            {sale.items.length} {sale.items.length === 1 ? 'item' : 'itens'}
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1">
+                                                <ShoppingBag className="w-4 h-4" />
+                                                {sale.items.length} {sale.items.length === 1 ? 'item' : 'itens'}
+                                            </div>
+                                            <button
+                                                onClick={() => handleDelete(sale)}
+                                                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition"
+                                                title="Excluir venda"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Items Summary - Compact */}
+                                    <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
+                                        <div className="space-y-1">
+                                            {sale.items.map((item, idx) => {
+                                                const product = products.find(p => p.id === item.product_id);
+                                                return (
+                                                    <div key={idx} className="text-xs text-gray-600 dark:text-gray-400">
+                                                        <span className="font-medium text-gray-900 dark:text-white">{item.quantity}x</span> {item.name || product?.name || 'Produto'}
+                                                        {product && (product.color || product.size || product.category) && (
+                                                            <span className="text-gray-500 dark:text-gray-500">
+                                                                {' '}(
+                                                                {[product.color, product.size, product.category].filter(Boolean).join(', ')}
+                                                                )
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>

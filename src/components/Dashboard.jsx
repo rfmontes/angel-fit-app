@@ -1,5 +1,5 @@
 import { useStore } from '../lib/store';
-import { DollarSign, Package, AlertTriangle } from 'lucide-react';
+import { DollarSign, Package, AlertTriangle, TrendingUp, ShoppingCart } from 'lucide-react';
 import { useMemo, useReducer } from 'react';
 
 export default function Dashboard() {
@@ -23,7 +23,7 @@ export default function Dashboard() {
         const totalCost = products.reduce((acc, curr) => acc + (curr.cost * curr.stock), 0);
 
         // Total Cost of All Pieces (investment = current stock + sold items at cost price)
-        const totalPiecesCost = products.reduce((acc, curr) => acc + curr.cost, 0) +
+        const totalPiecesCost = products.reduce((acc, curr) => acc + (curr.cost * curr.stock), 0) +
             sales.reduce((acc, sale) => {
                 if (!sale.items) return acc;
                 return acc + sale.items.reduce((sum, item) => {
@@ -35,6 +35,12 @@ export default function Dashboard() {
 
         // Potential Revenue (current stock valued at sale prices)
         const potentialRevenue = products.reduce((acc, curr) => acc + (curr.price * curr.stock), 0);
+
+        // Profit Margin (Total Revenue - Total Investment)
+        const profitMargin = totalRevenue - totalPiecesCost;
+
+        // Average Ticket (Total Revenue / Number of Sales)
+        const averageTicket = sales.length > 0 ? totalRevenue / sales.length : 0;
 
         // Group by Category and Color
         // Structure: { 'CategoryName': { stock: 0, cost: 0, sales: 0 } }
@@ -81,7 +87,7 @@ export default function Dashboard() {
             }
         });
 
-        return { totalProducts, outOfStock, salesToday, totalRevenue, itemsSold, totalCost, totalPiecesCost, potentialRevenue, byCategory, byColor };
+        return { totalProducts, outOfStock, salesToday, totalRevenue, itemsSold, totalCost, totalPiecesCost, potentialRevenue, profitMargin, averageTicket, byCategory, byColor };
     }, [products, sales]);
 
     const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -90,7 +96,7 @@ export default function Dashboard() {
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Visão Geral</h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Sales Today Card */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center">
                     <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400 mr-4">
@@ -170,6 +176,34 @@ export default function Dashboard() {
                     <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Sem Estoque</p>
                         <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.outOfStock} itens</p>
+                    </div>
+                </div>
+
+                {/* Profit Margin Card */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center">
+                    <div className={`p-3 rounded-full mr-4 ${stats.profitMargin >= 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+                        <TrendingUp className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Lucro Líquido</p>
+                        <p className={`text-2xl font-bold ${stats.profitMargin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {formatCurrency(stats.profitMargin)}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">vendas - investimento</p>
+                    </div>
+                </div>
+
+                {/* Average Ticket Card */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center">
+                    <div className="p-3 bg-cyan-100 dark:bg-cyan-900/30 rounded-full text-cyan-600 dark:text-cyan-400 mr-4">
+                        <ShoppingCart className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Ticket Médio</p>
+                        <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                            {formatCurrency(stats.averageTicket)}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">por venda</p>
                     </div>
                 </div>
             </div>
