@@ -8,12 +8,14 @@ export default function Sales() {
     const [cart, setCart] = useState([]);
 
     const filteredProducts = useMemo(() => {
-        return products.filter(p =>
-            p.stock > 0 && (
-                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                p.category.toLowerCase().includes(searchTerm.toLowerCase())
+        return products
+            .filter(p =>
+                p.stock > 0 && (
+                    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    p.category.toLowerCase().includes(searchTerm.toLowerCase())
+                )
             )
-        );
+            .sort((a, b) => a.name.localeCompare(b.name));
     }, [products, searchTerm]);
 
     const addToCart = (product) => {
